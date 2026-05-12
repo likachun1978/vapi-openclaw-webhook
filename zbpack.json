@@ -1,4 +1,4 @@
 {
   "install_command": "npm install",
-  "start_command": "node index.js"
+  "start_command": "node src/index.js"
 }
