@@ -24,8 +24,13 @@ app.post('/webhook', async (req, res) => {
     }
     console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
     
-    //const userInstruction = message?.functionCall?.parameters?.instruction || '';
-    const userInstruction = "聽日什麼天氣？"
+    // ✅ 提取 messagesOpenAIFormatted
+    const messagesOpenAIFormatted = message?.call?.messagesOpenAIFormatted || [];
+
+    // ✅ 找最後一條 role === "user" 的 content
+    const userMessages = messagesOpenAIFormatted.filter(m => m.role === 'user');
+    const userInstruction = userMessages[userMessages.length - 1]?.content || '';
+    
     const callId = message?.call?.id || 'unknown';
 
     console.log(`[${callId}] Instruction: ${userInstruction}`);
