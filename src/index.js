@@ -30,10 +30,15 @@ app.post('/webhook', async (req, res) => {
     console.log(`[${callId}] Instruction: ${userInstruction}`);
   
     const clawResponse = await axios.post(
-      `${OPENCLAW_URL}/api/v1/message`,
+      `${OPENCLAW_URL}/v1/chat/completions`,
       {
-        message: userInstruction,
-        stream: false
+        model: 'openclaw/default',
+        messages: [
+          {
+            role: 'user',
+            content: userInstruction
+          }
+        ]
       },
       {
         headers: {
@@ -44,7 +49,8 @@ app.post('/webhook', async (req, res) => {
       }
     );
 
-    const result = clawResponse.data?.text
+    const result = clawResponse.data?.choices?.[0]?.message?.content
+      || clawResponse.data?.text
       || clawResponse.data?.output
       || clawResponse.data?.result
       || '任務已完成';
