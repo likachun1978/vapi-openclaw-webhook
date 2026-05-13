@@ -74,7 +74,14 @@ app.post('/webhook', async (req, res) => {
     console.log(`[${callId}] Instruction: ${userInstruction}`);
 
     if (!userInstruction) {
-      return res.json({ result: '抱歉，我暫時讀不到用戶的訊息內容。' });
+      return res.json({
+        results: [
+          {
+            toolCallId: callId,
+            result: '抱歉，我暫時讀不到用戶的訊息內容。'
+          }
+        ]
+      });
     }
 
     const clawResponse = await axios.post(
@@ -105,10 +112,24 @@ app.post('/webhook', async (req, res) => {
       '任務已完成';
 
     console.log(`[${callId}] Result: ${result}`);
-    res.json({ result });
+    res.json({
+      results: [
+        {
+          toolCallId: callId,
+          result
+        }
+      ]
+    });
   } catch (error) {
     console.error('Webhook error:', error.message);
-    res.json({ result: '抱歉，我遇到了一些問題，請稍後再試。' });
+    res.json({
+      results: [
+        {
+          toolCallId: 'unknown',
+          result: '抱歉，我遇到了一些問題，請稍後再試。'
+        }
+      ]
+    });
   }
 });
 
