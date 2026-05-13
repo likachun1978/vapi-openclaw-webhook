@@ -12,7 +12,9 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-  console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
+  //console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
+  console.log("🔥 WEBHOOK HIT");
+  
   try {
     const { message } = req.body;
 
