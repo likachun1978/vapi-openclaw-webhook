@@ -26,10 +26,16 @@ app.post('/webhook', async (req, res) => {
     
     // ✅ 提取 messagesOpenAIFormatted
     const messagesOpenAIFormatted = message?.call?.messagesOpenAIFormatted || [];
+    console.log("📋 messagesOpenAIFormatted length:", messagesOpenAIFormatted.length);
+    console.log("📋 messagesOpenAIFormatted:", JSON.stringify(messagesOpenAIFormatted, null, 2));
 
     // ✅ 找最後一條 role === "user" 的 content
     const userMessages = messagesOpenAIFormatted.filter(m => m.role === 'user');
+    console.log("👤 userMessages count:", userMessages.length);
+    console.log("👤 userMessages:", JSON.stringify(userMessages, null, 2));
+    
     const userInstruction = userMessages[userMessages.length - 1]?.content || '';
+    console.log("💬 userInstruction:", userInstruction);
     
     const callId = message?.call?.id || 'unknown';
 
