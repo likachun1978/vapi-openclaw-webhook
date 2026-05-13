@@ -25,6 +25,7 @@ app.post('/webhook', async (req, res) => {
     const callId = message?.call?.id || 'unknown';
 
     console.log(`[${callId}] Instruction: ${userInstruction}`);
+    console.log('Calling:', `${OPENCLAW_URL}/api/v1/message`);
 
     const clawResponse = await axios.post(
       `${OPENCLAW_URL}/api/v1/message`,
