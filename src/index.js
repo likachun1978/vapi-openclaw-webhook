@@ -12,6 +12,7 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
+  console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
   try {
     const { message } = req.body;
 
@@ -23,7 +24,7 @@ app.post('/webhook', async (req, res) => {
     const callId = message?.call?.id || 'unknown';
 
     console.log(`[${callId}] Instruction: ${userInstruction}`);
-
+  
     const clawResponse = await axios.post(
       `${OPENCLAW_URL}/api/v1/message`,
       {
