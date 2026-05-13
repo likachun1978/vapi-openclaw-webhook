@@ -66,7 +66,8 @@ app.post('/webhook', async (req, res) => {
     }
 
     const userInstruction = extractUserInstruction(req.body);
-    const callId = message?.call?.id || message?.toolCallId || 'unknown';
+    const callId = message?.toolCallId || 'unknown';
+    //const callId = message?.call?.id || message?.toolCallId || 'unknown';
     //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
 
     if (!userInstruction) {
