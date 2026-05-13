@@ -19,7 +19,8 @@ app.post('/webhook', async (req, res) => {
     const { message } = req.body;
     console.log("Message type:", message?.type);
 
-    if (message?.type !== 'function-call') {
+    //if (message?.type !== 'function-call') {
+    if (message?.type !== 'tool-calls') {
       return res.json({ result: 'ok' });
     }
 
