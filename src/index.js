@@ -13,17 +13,17 @@ app.get('/health', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
   //console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
-  console.log("🔥 WEBHOOK HIT");
+  //console.log("🔥 WEBHOOK HIT");
   
   try {
     const { message } = req.body;
-    console.log("Message type:", message?.type);
+    //console.log("Message type:", message?.type);
 
-    //if (message?.type !== 'function-call') {
     if (message?.type !== 'tool-calls') {
       return res.json({ result: 'ok' });
     }
-
+    console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
+    
     //const userInstruction = message?.functionCall?.parameters?.instruction || '';
     const userInstruction = "聽日什麼天氣？"
     const callId = message?.call?.id || 'unknown';
