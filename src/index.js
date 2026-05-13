@@ -67,6 +67,7 @@ app.post('/webhook', async (req, res) => {
 
     const userInstruction = extractUserInstruction(req.body);
     const callId = message?.call?.id || message?.toolCallId || 'unknown';
+    //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
 
     if (!userInstruction) {
       const errorResponse = {
@@ -121,7 +122,17 @@ app.post('/webhook', async (req, res) => {
     };
 
     console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(successResponse, null, 2));
-    res.status(200).json(successResponse);
+    //res.status(200).json(successResponse);
+
+    return res.json({
+      results: [
+        {
+          toolCallId: callId,
+          result: result
+        }
+      ]
+    });
+
 
   } catch (error) {
     const timestamp = new Date().toISOString();
