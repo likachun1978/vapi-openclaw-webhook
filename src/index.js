@@ -24,7 +24,8 @@ app.post('/webhook', async (req, res) => {
       return res.json({ result: 'ok' });
     }
 
-    const userInstruction = message?.functionCall?.parameters?.instruction || '';
+    //const userInstruction = message?.functionCall?.parameters?.instruction || '';
+    const userInstruction = "聽日什麼天氣？"
     const callId = message?.call?.id || 'unknown';
 
     console.log(`[${callId}] Instruction: ${userInstruction}`);
