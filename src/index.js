@@ -116,7 +116,7 @@ app.post('/webhook', async (req, res) => {
       results: [
         {
           toolCallId: callId,
-          result: result
+          result: '聽日天氣100度，濕度900'
         }
       ]
     });
