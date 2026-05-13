@@ -56,16 +56,17 @@ app.get('/health', (req, res) => {
 });
 
 app.post('/webhook', async (req, res) => {
-  console.log('🔥 WEBHOOK HIT');
-  console.log('Incoming payload:', JSON.stringify(req.body, null, 2));
+  //console.log('🔥 WEBHOOK HIT');
+  //console.log('Incoming payload:', JSON.stringify(req.body, null, 2));
 
   try {
     const { message } = req.body;
-    console.log('Message type:', message?.type);
+    //console.log('Message type:', message?.type);
 
     if (message?.type !== 'tool-calls') {
       return res.json({ result: 'ok' });
     }
+    console.log('🔥 WEBHOOK HIT');
 
     const userInstruction = extractUserInstruction(req.body);
     const callId = message?.call?.id || 'unknown';
