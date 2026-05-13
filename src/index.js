@@ -31,8 +31,7 @@ app.post('/webhook', async (req, res) => {
     console.log(`[${callId}] Instruction: ${userInstruction}`);
   
     const clawResponse = await axios.post(
-      //`${OPENCLAW_URL}/v1/chat/completions`,
-      `${OPENCLAW_URL}/tools/invoke`,
+      `${OPENCLAW_URL}/v1/chat/completions`,
       {
         model: 'openclaw/default',
         messages: [
