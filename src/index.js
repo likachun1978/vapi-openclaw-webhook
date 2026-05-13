@@ -7,40 +7,75 @@ const OPENCLAW_URL = process.env.OPENCLAW_URL;
 const OPENCLAW_TOKEN = process.env.OPENCLAW_TOKEN;
 const PORT = process.env.PORT || 3000;
 
+function extractUserInstruction(body) {
+  const message = body?.message;
+
+  const candidates = [
+    message?.toolCalls?.[0]?.function?.arguments,
+    message?.toolCalls?.[0]?.arguments,
+    message?.call?.parameters,
+    message?.functionCall?.parameters,
+    body?.message?.content,
+    body?.content
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    if (typeof candidate === 'string') {
+      try {
+        const parsed = JSON.parse(candidate);
+        if (parsed?.instruction) return parsed.instruction;
+        if (parsed?.message) return parsed.message;
+        if (parsed?.query) return parsed.query;
+        if (parsed?.content) return parsed.content;
+      } catch {
+        return candidate;
+      }
+    }
+
+    if (typeof candidate === 'object') {
+      if (candidate?.instruction) return candidate.instruction;
+      if (candidate?.message) return candidate.message;
+      if (candidate?.query) return candidate.query;
+      if (candidate?.content) return candidate.content;
+    }
+  }
+
+  const messages = body?.messages || body?.conversation?.messages;
+  if (Array.isArray(messages)) {
+    const lastUserMessage = [...messages].reverse().find((m) => m?.role === 'user');
+    if (lastUserMessage?.content) return lastUserMessage.content;
+  }
+
+  return '';
+}
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'vapi-openclaw-webhook' });
 });
 
 app.post('/webhook', async (req, res) => {
-  //console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
-  //console.log("🔥 WEBHOOK HIT");
-  
+  console.log('🔥 WEBHOOK HIT');
+  console.log('Incoming payload:', JSON.stringify(req.body, null, 2));
+
   try {
     const { message } = req.body;
-    //console.log("Message type:", message?.type);
+    console.log('Message type:', message?.type);
 
     if (message?.type !== 'tool-calls') {
       return res.json({ result: 'ok' });
     }
-    console.log("🔥 WEBHOOK HIT:", JSON.stringify(req.body, null, 2));
-    
-    // ✅ 提取 messagesOpenAIFormatted
-    const messagesOpenAIFormatted = message?.call?.messagesOpenAIFormatted || [];
-    console.log("📋 messagesOpenAIFormatted length:", messagesOpenAIFormatted.length);
-    console.log("📋 messagesOpenAIFormatted:", JSON.stringify(messagesOpenAIFormatted, null, 2));
 
-    // ✅ 找最後一條 role === "user" 的 content
-    const userMessages = messagesOpenAIFormatted.filter(m => m.role === 'user');
-    console.log("👤 userMessages count:", userMessages.length);
-    console.log("👤 userMessages:", JSON.stringify(userMessages, null, 2));
-    
-    const userInstruction = userMessages[userMessages.length - 1]?.content || '';
-    console.log("💬 userInstruction:", userInstruction);
-    
+    const userInstruction = extractUserInstruction(req.body);
     const callId = message?.call?.id || 'unknown';
 
     console.log(`[${callId}] Instruction: ${userInstruction}`);
-  
+
+    if (!userInstruction) {
+      return res.json({ result: '抱歉，我暫時讀不到用戶的訊息內容。' });
+    }
+
     const clawResponse = await axios.post(
       `${OPENCLAW_URL}/v1/chat/completions`,
       {
@@ -54,22 +89,22 @@ app.post('/webhook', async (req, res) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${OPENCLAW_TOKEN}`,
+          Authorization: `Bearer ${OPENCLAW_TOKEN}`,
           'Content-Type': 'application/json'
         },
         timeout: 25000
       }
     );
 
-    const result = clawResponse.data?.choices?.[0]?.message?.content
-      || clawResponse.data?.text
-      || clawResponse.data?.output
-      || clawResponse.data?.result
-      || '任務已完成';
+    const result =
+      clawResponse.data?.choices?.[0]?.message?.content ||
+      clawResponse.data?.text ||
+      clawResponse.data?.output ||
+      clawResponse.data?.result ||
+      '任務已完成';
 
     console.log(`[${callId}] Result: ${result}`);
     res.json({ result });
-
   } catch (error) {
     console.error('Webhook error:', error.message);
     res.json({ result: '抱歉，我遇到了一些問題，請稍後再試。' });
