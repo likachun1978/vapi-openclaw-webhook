@@ -69,7 +69,14 @@ app.post('/webhook', async (req, res) => {
     const callId = message?.toolCallList?.[0]?.id || 'unknown';
     //const callId = message?.call?.id || message?.toolCallId || 'unknown';
     //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
-
+    
+    const sessionId =
+        req.body?.call?.id ||
+        req.body?.message?.call?.id ||
+        message?.id ||
+        'session-default';
+  
+    
     if (!userInstruction) {
       const errorResponse = {
         results: [
@@ -86,7 +93,7 @@ app.post('/webhook', async (req, res) => {
 
     const clawPayload = {
       model: 'openclaw/default',
-      sessionId: callId,
+      sessionId: sessionId,
       messages: [
         {
           role: 'user',
