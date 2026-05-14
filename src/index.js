@@ -70,14 +70,8 @@ app.post('/webhook', async (req, res) => {
     //const callId = message?.call?.id || message?.toolCallId || 'unknown';
     //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
     
-    if (!callId?.function?.arguments && !callId?.arguments) {
-      return res.json({ result: 'ok' });
-    }
-
     
     const sessionId = req.body?.call?.id || req.body?.message?.call?.id;
-
-    const messageId = message?.id;
     
     console.log(`Session ID: ${sessionId}`);
 
