@@ -94,7 +94,6 @@ app.post('/webhook', async (req, res) => {
 
     const clawPayload = {
       model: 'openclaw/default',
-      sessionId: sessionId,
       messages: [
         {
           role: 'user',
@@ -104,12 +103,13 @@ app.post('/webhook', async (req, res) => {
     };
 
     const clawResponse = await axios.post(
-      `${OPENCLAW_URL}/v1/chat`,
+      `${OPENCLAW_URL}/v1/chat/completions`,
       clawPayload,
       {
         headers: {
           Authorization: `Bearer ${OPENCLAW_TOKEN}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-openclaw-session-id': sessionId   // ⭐关键
         },
         timeout: 25000
       }
