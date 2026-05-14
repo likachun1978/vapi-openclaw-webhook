@@ -76,6 +76,7 @@ app.post('/webhook', async (req, res) => {
         message?.id ||
         'session-default';
   
+    console.log(`Session ID: ${sessionId}`);
     
     if (!userInstruction) {
       const errorResponse = {
