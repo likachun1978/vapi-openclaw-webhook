@@ -81,15 +81,6 @@ app.post('/webhook', async (req, res) => {
     
     console.log(`Session ID: ${sessionId}`);
 
-    
-    // ✅ 2. dedupe
-    global.processedMessages = global.processedMessages || new Set();
-    
-    if (global.processedMessages.has(messageId)) {
-      return res.json({ result: "duplicate ignored" });
-    }
-    global.processedMessages.add(messageId);
-
     // ✅ 3. enforce sessionId ONLY callId
     if (!sessionId) {
       return res.json({ result: "no session id yet" });
