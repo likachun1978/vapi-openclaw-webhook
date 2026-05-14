@@ -61,7 +61,7 @@ app.post('/webhook', async (req, res) => {
   try {
     const { message } = req.body;
 
-    if (message?.type !== 'tool-calls') {
+    if (message?.type !== 'tool-calls'||!message?.toolCallList || message.toolCallList.length === 0) {
       return res.json({ result: 'ok' });
     }
 
@@ -70,14 +70,29 @@ app.post('/webhook', async (req, res) => {
     //const callId = message?.call?.id || message?.toolCallId || 'unknown';
     //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
     
-    const sessionId =
-        req.body?.call?.id ||
-        req.body?.message?.call?.id ||
-        message?.id ||
-        'session-default';
-  
-    console.log(`Session ID: ${sessionId}`);
+    if (!toolCall?.function?.arguments && !toolCall?.arguments) {
+      return res.json({ result: 'ok' });
+    }
+
+    const sessionId = req.body?.call?.id;
+    const messageId = message?.id;
     
+    console.log(`Session ID: ${sessionId}`);
+
+    
+    // ✅ 2. dedupe
+    global.processedMessages = global.processedMessages || new Set();
+    
+    if (global.processedMessages.has(messageId)) {
+      return res.json({ result: "duplicate ignored" });
+    }
+    global.processedMessages.add(messageId);
+
+    // ✅ 3. enforce sessionId ONLY callId
+    if (!sessionId) {
+      return res.json({ result: "no session id yet" });
+    }
+
     if (!userInstruction) {
       const errorResponse = {
         results: [
