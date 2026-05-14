@@ -86,6 +86,7 @@ app.post('/webhook', async (req, res) => {
 
     const clawPayload = {
       model: 'openclaw/default',
+      sessionId: callId,
       messages: [
         {
           role: 'user',
