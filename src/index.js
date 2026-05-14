@@ -104,7 +104,7 @@ app.post('/webhook', async (req, res) => {
     };
 
     const clawResponse = await axios.post(
-      `${OPENCLAW_URL}/v1/chat/completions`,
+      `${OPENCLAW_URL}/v1/chat`,
       clawPayload,
       {
         headers: {
