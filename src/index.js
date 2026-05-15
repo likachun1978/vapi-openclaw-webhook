@@ -7,6 +7,9 @@ const OPENCLAW_URL = process.env.OPENCLAW_URL;
 const OPENCLAW_TOKEN = process.env.OPENCLAW_TOKEN;
 const PORT = process.env.PORT || 3000;
 
+// In-memory conversation history keyed by VAPI call ID
+const sessionStore = new Map();
+
 function extractUserInstruction(body) {
   const message = body?.message;
 
@@ -57,27 +60,31 @@ app.get('/health', (req, res) => {
 
 app.post('/webhook', async (req, res) => {
   const timestamp = new Date().toISOString();
-  
+
   try {
     const { message } = req.body;
+    const sessionId = req.body?.call?.id || req.body?.message?.call?.id;
 
-    if (message?.type !== 'tool-calls'||!message?.toolCallList || message.toolCallList.length === 0) {
+    // Clean up session when the call ends
+    if (message?.type === 'end-of-call-report' || message?.type === 'call-ended') {
+      if (sessionId) {
+        sessionStore.delete(sessionId);
+        console.log(`[${timestamp}] Session cleaned up: ${sessionId}`);
+      }
+      return res.json({ result: 'ok' });
+    }
+
+    if (message?.type !== 'tool-calls' || !message?.toolCallList || message.toolCallList.length === 0) {
       return res.json({ result: 'ok' });
     }
 
     const userInstruction = extractUserInstruction(req.body);
     const callId = message?.toolCallList?.[0]?.id || 'unknown';
-    //const callId = message?.call?.id || message?.toolCallId || 'unknown';
-    //const callId = message?.call?.id || message?.toolCalls?.[0]?.id || 'unknown';
-    
-    
-    const sessionId = req.body?.call?.id || req.body?.message?.call?.id;
-    
-    console.log(`Session ID: ${sessionId}`);
 
-    // ✅ 3. enforce sessionId ONLY callId
+    console.log(`[${timestamp}] Session ID: ${sessionId}`);
+
     if (!sessionId) {
-      return res.json({ result: "no session id yet" });
+      return res.json({ result: 'no session id yet' });
     }
 
     if (!userInstruction) {
@@ -90,18 +97,21 @@ app.post('/webhook', async (req, res) => {
         ]
       };
       console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(errorResponse, null, 2));
-      res.status(200).json(errorResponse);
-      return;
+      return res.status(200).json(errorResponse);
     }
+
+    // Get or create conversation history for this session
+    if (!sessionStore.has(sessionId)) {
+      sessionStore.set(sessionId, []);
+    }
+    const history = sessionStore.get(sessionId);
+
+    // Append the new user message to the history
+    history.push({ role: 'user', content: userInstruction });
 
     const clawPayload = {
       model: 'openclaw/default',
-      messages: [
-        {
-          role: 'user',
-          content: userInstruction
-        }
-      ]
+      messages: history
     };
 
     const clawResponse = await axios.post(
@@ -111,7 +121,7 @@ app.post('/webhook', async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENCLAW_TOKEN}`,
           'Content-Type': 'application/json',
-          'x-openclaw-session-id': sessionId   // ⭐关键
+          'x-openclaw-session-id': sessionId
         },
         timeout: 25000
       }
@@ -124,6 +134,9 @@ app.post('/webhook', async (req, res) => {
       clawResponse.data?.result ||
       '任務已完成';
 
+    // Append the assistant reply to the history so the next turn has context
+    history.push({ role: 'assistant', content: result });
+
     const successResponse = {
       results: [
         {
@@ -134,21 +147,11 @@ app.post('/webhook', async (req, res) => {
     };
 
     console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(successResponse, null, 2));
-    //res.status(200).json(successResponse);
-
-    return res.json({
-      results: [
-        {
-          toolCallId: callId,
-          result: result
-        }
-      ]
-    });
-
+    return res.json(successResponse);
 
   } catch (error) {
     const timestamp = new Date().toISOString();
-    
+
     const errorResponse = {
       results: [
         {
@@ -160,7 +163,7 @@ app.post('/webhook', async (req, res) => {
 
     console.error(`[${timestamp}] ERROR:`, error.message);
     console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(errorResponse, null, 2));
-    res.status(200).json(errorResponse);
+    return res.status(200).json(errorResponse);
   }
 });
 
