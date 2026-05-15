@@ -10,6 +10,33 @@ const PORT = process.env.PORT || 3000;
 // In-memory conversation history keyed by VAPI call ID
 const sessionStore = new Map();
 
+// Persists history across calls keyed by customer phone number, with TTL
+// so that a callback 1 minute later can resume the prior conversation.
+const callbackStore = new Map();
+const CALLBACK_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function extractPhoneNumber(body) {
+  return (
+    body?.message?.call?.customer?.number ||
+    body?.call?.customer?.number ||
+    body?.message?.customer?.number ||
+    body?.customer?.number ||
+    null
+  );
+}
+
+// Remove entries whose TTL has expired to prevent memory leaks
+function cleanupExpiredCallbacks() {
+  const now = Date.now();
+  for (const [phone, entry] of callbackStore.entries()) {
+    if (entry.expiresAt <= now) {
+      callbackStore.delete(phone);
+    }
+  }
+}
+
+const cleanupInterval = setInterval(cleanupExpiredCallbacks, 60 * 1000);
+
 function extractUserInstruction(body) {
   const message = body?.message;
 
@@ -65,9 +92,17 @@ app.post('/webhook', async (req, res) => {
     const { message } = req.body;
     const sessionId = req.body?.call?.id || req.body?.message?.call?.id;
 
-    // Clean up session when the call ends
+    // Clean up session when the call ends, preserving history for callbacks
     if (message?.type === 'end-of-call-report' || message?.type === 'call-ended') {
       if (sessionId) {
+        const history = sessionStore.get(sessionId);
+        if (history && history.length > 0) {
+          const phone = extractPhoneNumber(req.body);
+          if (phone) {
+            callbackStore.set(phone, { history, expiresAt: Date.now() + CALLBACK_TTL_MS });
+            console.log(`[${timestamp}] History saved for callback: phone=${phone}, turns=${history.length}`);
+          }
+        }
         sessionStore.delete(sessionId);
         console.log(`[${timestamp}] Session cleaned up: ${sessionId}`);
       }
@@ -100,9 +135,19 @@ app.post('/webhook', async (req, res) => {
       return res.status(200).json(errorResponse);
     }
 
-    // Get or create conversation history for this session
+    // Get or create conversation history for this session.
+    // If this is a new session, check callbackStore for history from a prior call
+    // (e.g. OpenClaw called back after 1 minute) so context is preserved.
     if (!sessionStore.has(sessionId)) {
-      sessionStore.set(sessionId, []);
+      const phone = extractPhoneNumber(req.body);
+      const callbackEntry = phone ? callbackStore.get(phone) : null;
+      if (callbackEntry && callbackEntry.expiresAt > Date.now()) {
+        sessionStore.set(sessionId, callbackEntry.history);
+        callbackStore.delete(phone);
+        console.log(`[${timestamp}] Restored callback history for session ${sessionId} from phone ${phone}, turns=${callbackEntry.history.length}`);
+      } else {
+        sessionStore.set(sessionId, []);
+      }
     }
     const history = sessionStore.get(sessionId);
 
