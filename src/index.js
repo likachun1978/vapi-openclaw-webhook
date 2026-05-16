@@ -199,7 +199,7 @@ app.post('/webhook', async (req, res) => {
     const successResponse = {
       results: [
         {
-          toolCallId: callId,
+          toolCallId: toolCallId,
           result: result
         }
       ]
