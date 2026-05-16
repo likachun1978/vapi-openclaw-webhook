@@ -20,7 +20,7 @@ const cleanupInterval = setInterval(cleanupExpiredCallbacks, 60 * 1000);
 function extractPhoneNumber(body) {
   const message = body?.message;
 
-  const raw = [
+  const raw = 
     message?.toolCalls?.[0]?.function?.arguments?.number ||
     message?.toolCalls?.[0]?.function?.arguments?.phone ||
     message?.toolCalls?.[0]?.function?.arguments?.phoneNumber ||
@@ -34,6 +34,7 @@ function extractPhoneNumber(body) {
     message?.call?.from ||
     message?.customer?.number ||
     null;
+    
   if (!raw) return null;
   return String(raw).replace(/[^\d+]/g, '');
 }
