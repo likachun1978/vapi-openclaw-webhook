@@ -34,7 +34,7 @@ function extractPhoneNumber(body) {
     message?.call?.from ||
     message?.customer?.number ||
     null;
-    
+
   if (!raw) return null;
   return String(raw).replace(/[^\d+]/g, '');
 }
@@ -136,8 +136,7 @@ app.post('/webhook', async (req, res) => {
     const userInstruction = extractUserInstruction(req.body);
     const toolCallId = message?.toolCallList?.[0]?.id || 'unknown';
 
-    console.log("body keys:", Object.keys(req.body || {}));
-    console.log("message keys:", Object.keys(req.body?.message || {}));
+    console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(req.body, null, 2));
 
     console.log(`[${timestamp}] phone: ${phone}`);
     console.log(`[${timestamp}] callId: ${callId}`);
