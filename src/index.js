@@ -100,10 +100,6 @@ app.post('/webhook', async (req, res) => {
     const callId = req.body?.call?.id || req.body?.message?.call?.id;
     const sessionId = phone ? `caller:${phone}` : (callId ? `call:${callId}` : null); 
 
-    console.log(`[${timestamp}] phone: ${phone}`);
-    console.log(`[${timestamp}] callId: ${callId}`);
-    console.log(`[${timestamp}] sessionId: ${sessionId}`);
-
     // Clean up session when the call ends, preserving history for callbacks
     if (message?.type === 'end-of-call-report' || message?.type === 'call-ended') {
       if (sessionId) {
@@ -129,7 +125,12 @@ app.post('/webhook', async (req, res) => {
     const userInstruction = extractUserInstruction(req.body);
     const toolCallId = message?.toolCallList?.[0]?.id || 'unknown';
 
-    console.log(`[${timestamp}] Session ID: ${sessionId}`);
+    console.log("body keys:", Object.keys(req.body || {}));
+    console.log("message keys:", Object.keys(req.body?.message || {}));
+
+    console.log(`[${timestamp}] phone: ${phone}`);
+    console.log(`[${timestamp}] callId: ${callId}`);
+    console.log(`[${timestamp}] sessionId: ${sessionId}`);
 
     if (!sessionId) {
       return res.json({ result: 'no session id yet' });
