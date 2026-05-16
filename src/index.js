@@ -134,6 +134,9 @@ app.post('/webhook', async (req, res) => {
       console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(errorResponse, null, 2));
       return res.status(200).json(errorResponse);
     }
+    else {
+      console.log(`[${timestamp}] Request: ${userInstruction}`);
+    }
 
     // Get or create conversation history for this session.
     // If this is a new session, check callbackStore for history from a prior call
@@ -191,7 +194,9 @@ app.post('/webhook', async (req, res) => {
       ]
     };
 
-    console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(successResponse, null, 2));
+    //console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(successResponse, null, 2));
+    console.log(`[${timestamp}] Response: ${successResponse.results?.[0]?.result}`);
+
     return res.json(successResponse);
 
   } catch (error) {
