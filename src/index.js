@@ -18,11 +18,21 @@ const CALLBACK_TTL_MS = 10 * 60 * 1000; // 10 minutes
 const cleanupInterval = setInterval(cleanupExpiredCallbacks, 60 * 1000);
 
 function extractPhoneNumber(body) {
-  const raw =
-    body?.message?.call?.customer?.number ||
-    body?.call?.customer?.number ||
-    body?.message?.customer?.number ||
-    body?.customer?.number ||
+  const message = body?.message;
+
+  const raw = [
+    message?.toolCalls?.[0]?.function?.arguments?.number ||
+    message?.toolCalls?.[0]?.function?.arguments?.phone ||
+    message?.toolCalls?.[0]?.function?.arguments?.phoneNumber ||
+    message?.toolCalls?.[0]?.function?.arguments?.customerNumber ||
+    message?.call?.customer?.number ||
+    message?.call?.customer?.phoneNumber ||
+    message?.call?.customer?.callerNumber ||
+    message?.call?.customer?.telephone ||
+    message?.call?.customer?.tel ||
+    message?.call?.customer?.from ||
+    message?.call?.from ||
+    message?.customer?.number ||
     null;
   if (!raw) return null;
   return String(raw).replace(/[^\d+]/g, '');
