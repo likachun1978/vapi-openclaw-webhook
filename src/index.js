@@ -123,7 +123,7 @@ app.post('/webhook', async (req, res) => {
     }
 
     const userInstruction = extractUserInstruction(req.body);
-    const callId = message?.toolCallList?.[0]?.id || 'unknown';
+    const toolCallId = message?.toolCallList?.[0]?.id || 'unknown';
 
     console.log(`[${timestamp}] Session ID: ${sessionId}`);
 
@@ -135,7 +135,7 @@ app.post('/webhook', async (req, res) => {
       const errorResponse = {
         results: [
           {
-            toolCallId: callId,
+            toolCallId: toolCallId,
             result: '抱歉，我暫時讀不到用戶的訊息內容。'
           }
         ]
@@ -225,3 +225,7 @@ app.post('/webhook', async (req, res) => {
     return res.status(200).json(errorResponse);
   }
 });
+
+
+process.on('SIGTERM', () => { clearInterval(cleanupInterval); process.exit(0); });
+process.on('SIGINT', () => { clearInterval(cleanupInterval); process.exit(0); });
