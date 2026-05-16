@@ -21,10 +21,13 @@ function extractPhoneNumber(body) {
   const message = body?.message;
 
   const raw = 
+    // ✅ toolCall arguments 裡面（如果 agent 有傳）
     message?.toolCalls?.[0]?.function?.arguments?.number ||
     message?.toolCalls?.[0]?.function?.arguments?.phone ||
     message?.toolCalls?.[0]?.function?.arguments?.phoneNumber ||
     message?.toolCalls?.[0]?.function?.arguments?.customerNumber ||
+    
+    // ✅ 其他 fallback path
     message?.call?.customer?.number ||
     message?.call?.customer?.phoneNumber ||
     message?.call?.customer?.callerNumber ||
@@ -32,7 +35,17 @@ function extractPhoneNumber(body) {
     message?.call?.customer?.tel ||
     message?.call?.customer?.from ||
     message?.call?.from ||
-    message?.customer?.number ||
+
+    // ✅ 最常見：Vapi inbound call 的電話號碼
+    body?.message?.call?.customer?.number ||
+    body?.call?.customer?.number ||
+
+    // ✅ 其他常見 path
+    body?.message?.call?.customer?.phoneNumber ||
+    body?.call?.customer?.phoneNumber ||
+    body?.message?.customer?.number ||
+    body?.customer?.number ||
+
     null;
 
   if (!raw) return null;
@@ -136,7 +149,7 @@ app.post('/webhook', async (req, res) => {
     const userInstruction = extractUserInstruction(req.body);
     const toolCallId = message?.toolCallList?.[0]?.id || 'unknown';
 
-    console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(req.body, null, 2));
+    //console.log(`[${timestamp}] RESPONSE:`, JSON.stringify(req.body, null, 2));
 
     console.log(`[${timestamp}] phone: ${phone}`);
     console.log(`[${timestamp}] callId: ${callId}`);
@@ -181,11 +194,12 @@ app.post('/webhook', async (req, res) => {
     const history = sessionStore.get(sessionId);
 
     // Append the new user message to the history
-    history.push({ role: 'user', content: userInstruction });
+    history.push({role: 'user', content: userInstruction});
 
     const clawPayload = {
       model: 'openclaw/default',
-      messages: history
+      messages: history, 
+      user: sessionId
     };
 
     const clawResponse = await axios.post(
@@ -195,7 +209,7 @@ app.post('/webhook', async (req, res) => {
         headers: {
           Authorization: `Bearer ${OPENCLAW_TOKEN}`,
           'Content-Type': 'application/json',
-          'x-openclaw-session-id': sessionId
+          'x-openclaw-session-key': sessionId
         },
         timeout: 25000
       }
@@ -222,7 +236,6 @@ app.post('/webhook', async (req, res) => {
     console.log(`[${timestamp}] Response: ${successResponse.results?.[0]?.result}`);
 
     return res.json(successResponse);
-
   } catch (error) {
     const timestamp = new Date().toISOString();
 
@@ -240,7 +253,6 @@ app.post('/webhook', async (req, res) => {
     return res.status(200).json(errorResponse);
   }
 });
-
 
 process.on('SIGTERM', () => { clearInterval(cleanupInterval); process.exit(0); });
 process.on('SIGINT', () => { clearInterval(cleanupInterval); process.exit(0); });
